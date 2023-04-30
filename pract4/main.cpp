@@ -55,7 +55,7 @@ void PutFirstPartOfMatrixC(double* C, double* partOfC, int n1, int n2) {
 }
 
 int main(int argc, char** argv) {
-    int size = 0;// общее сило процессов в коммуникаторе MPI_COMM_WORLD
+    int size = 0;// общее число процессов в коммуникаторе MPI_COMM_WORLD
     int rank = 0;// номер конкретного процесса в коммуникаторе MPI_COMM_WORLD
     int coordsOfProcesses[X_DIMS * Y_DIMS] = { 0 };// массив с декартовыми координатами процессов
     double startTime;
@@ -106,17 +106,24 @@ int main(int argc, char** argv) {
         4. coords — возвращаемые функцией декартовы координаты процесса.
     */
 
-    if (rank == 0) {
+    if (rank != 0) {
+        MPI_Send(coords, 2, MPI_INT, 0, COORDS_MSG_TAG, CartTopology); // все отправляют нулевому процессу свои декартовы координаты
+    }
+    else {
         for (int i = 1; i < size; ++i) {
-            MPI_Recv(coords, 2, MPI_INT, 0, COORDS_MSG_TAG, CartTopology, MPI_STATUS_IGNORE); // нулевой процесс получает от других процессов их декартовы координаты
+            MPI_Recv(coords, 2, MPI_INT, i, COORDS_MSG_TAG, CartTopology, MPI_STATUS_IGNORE); // нулевой процесс получает от других процессов их декартовы координаты
             coordsOfProcesses[i] = coords[0] * 10 + coords[1]; // декартовы координаты каждого процесса кроме нулевого преобразуются в двузначное число и кладутся в общий массив
         }
         // зануляем значения для следующего процесса
         coords[0] = 0;
         coords[1] = 0;
     }
+
+    if (rank == 0) {
+        printf("S!!!!\n");
+    }
     else {
-        MPI_Send(coords, 2, MPI_INT, 0, COORDS_MSG_TAG, CartTopology); // все отправляют нулевому процессу свои декартовы координаты
+        printf("M!!!!!\n");
     }
 
     int subDims[2] = { 0, 0 }; // массив для размерности подрешеток
